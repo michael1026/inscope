@@ -80,6 +80,7 @@ type Links struct {
 func main() {
 	username := flag.String("u", "", "Username for basic auth")
 	apiToken := flag.String("t", "", "API token for basic auth")
+	paidOnly := flag.Bool("paid", false, "Only include paid programs")
 	flag.Parse()
 
 	// urls := make(chan string)
@@ -91,13 +92,13 @@ func main() {
 	// 	urls <- s.Text()
 	// }
 
-	makeAPIRequest(*username, *apiToken)
+	makeAPIRequest(username, apiToken, paidOnly)
 
 	// close(urls)
 	// wg.Wait()
 }
 
-func makeAPIRequest(username string, token string) {
+func makeAPIRequest(username *string, token *string, paidOnly *bool) {
 	client := buildHttpClient()
 	var data H1Response
 	url := "https://api.hackerone.com/v1/hackers/programs?page[size]=100&page[number]=1"
@@ -116,7 +117,7 @@ func makeAPIRequest(username string, token string) {
 			return
 		}
 
-		req.SetBasicAuth(username, token)
+		req.SetBasicAuth(*username, *token)
 
 		resp, err := client.Do(req)
 
@@ -139,7 +140,7 @@ func makeAPIRequest(username string, token string) {
 				return
 			}
 
-			detailReq.SetBasicAuth(username, token)
+			detailReq.SetBasicAuth(*username, *token)
 
 			detailResp, err := client.Do(detailReq)
 
@@ -153,7 +154,9 @@ func makeAPIRequest(username string, token string) {
 
 			for _, scope := range programDetails.Relationships.StructedScopes.Data {
 				if scope.Attributes.AssetType == "URL" {
-					fmt.Println(scope.Attributes.AssetIdentifier)
+					if *paidOnly == false || scope.Attributes.EligibleForBounty == true {
+						fmt.Println(scope.Attributes.AssetIdentifier)
+					}
 				}
 			}
 		}
