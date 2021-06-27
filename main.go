@@ -124,7 +124,7 @@ func makeAPIRequest(username string, token string) {
 			return
 		}
 
-		detailReq.SetBasicAuth("michael1026", "6BwnVbZ6PVFICxw8IsxAexWonC8JWtTTo1hPzvHHBZg=")
+		detailReq.SetBasicAuth(username, token)
 
 		detailResp, err := client.Do(detailReq)
 
