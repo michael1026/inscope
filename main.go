@@ -11,7 +11,8 @@ import (
 )
 
 type H1Response struct {
-	Data []Data `json:"data"`
+	Data  []Data `json:"data"`
+	Links Links  `json:"links"`
 }
 
 type Data struct {
@@ -70,6 +71,12 @@ type StructedScopeAttribute struct {
 	Availabilityrequirement    string `json:"availibity_requirement"`
 }
 
+type Links struct {
+	Self     string `json:"self"`
+	Next     string `json:"next"`
+	Previous string `json:"previous"`
+}
+
 func main() {
 	username := flag.String("u", "", "Username for basic auth")
 	apiToken := flag.String("t", "", "API token for basic auth")
@@ -93,57 +100,66 @@ func main() {
 func makeAPIRequest(username string, token string) {
 	client := buildHttpClient()
 	var data H1Response
+	url := "https://api.hackerone.com/v1/hackers/programs?page[size]=100&page[number]=1"
 
-	req, err := http.NewRequest("GET", "https://api.hackerone.com/v1/hackers/programs?page[size]=100", nil)
+	for next := true; next; {
+		if data.Links.Self != "" {
+			url = data.Links.Next
+		}
 
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+		println(url)
 
-	req.SetBasicAuth(username, token)
-
-	resp, err := client.Do(req)
-
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	defer resp.Body.Close()
-
-	json.NewDecoder(resp.Body).Decode(&data)
-
-	for _, details := range data.Data {
-		var programDetails ProgramDetails
-
-		detailReq, err := http.NewRequest("GET", "https://api.hackerone.com/v1/hackers/programs/"+details.Attributes.Handle, nil)
+		req, err := http.NewRequest("GET", url, nil)
 
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
 
-		detailReq.SetBasicAuth(username, token)
+		req.SetBasicAuth(username, token)
 
-		detailResp, err := client.Do(detailReq)
+		resp, err := client.Do(req)
 
 		if err != nil {
 			fmt.Println(err)
+			return
 		}
 
-		defer detailResp.Body.Close()
+		defer resp.Body.Close()
 
-		json.NewDecoder(detailResp.Body).Decode(&programDetails)
+		json.NewDecoder(resp.Body).Decode(&data)
 
-		for _, scope := range programDetails.Relationships.StructedScopes.Data {
-			if scope.Attributes.AssetType == "URL" {
-				fmt.Println(scope.Attributes.AssetIdentifier)
+		for _, details := range data.Data {
+			var programDetails ProgramDetails
+
+			detailReq, err := http.NewRequest("GET", "https://api.hackerone.com/v1/hackers/programs/"+details.Attributes.Handle, nil)
+
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+
+			detailReq.SetBasicAuth(username, token)
+
+			detailResp, err := client.Do(detailReq)
+
+			if err != nil {
+				fmt.Println(err)
+			}
+
+			defer detailResp.Body.Close()
+
+			json.NewDecoder(detailResp.Body).Decode(&programDetails)
+
+			for _, scope := range programDetails.Relationships.StructedScopes.Data {
+				if scope.Attributes.AssetType == "URL" {
+					fmt.Println(scope.Attributes.AssetIdentifier)
+				}
 			}
 		}
-	}
 
-	fmt.Println(data)
+		next = data.Links.Next != data.Links.Self
+	}
 }
 
 func buildHttpClient() *http.Client {
