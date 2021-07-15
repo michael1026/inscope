@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -99,7 +100,7 @@ func makeAPIRequest(username *string, token *string, paidOnly *bool) {
 		req, err := http.NewRequest("GET", url, nil)
 
 		if err != nil {
-			fmt.Println(err)
+			fmt.Fprintln(os.Stderr, err)
 			return
 		}
 
@@ -108,7 +109,7 @@ func makeAPIRequest(username *string, token *string, paidOnly *bool) {
 		resp, err := client.Do(req)
 
 		if err != nil {
-			fmt.Println(err)
+			fmt.Fprintln(os.Stderr, err)
 			return
 		}
 
@@ -122,7 +123,7 @@ func makeAPIRequest(username *string, token *string, paidOnly *bool) {
 			detailReq, err := http.NewRequest("GET", "https://api.hackerone.com/v1/hackers/programs/"+details.Attributes.Handle, nil)
 
 			if err != nil {
-				fmt.Println(err)
+				fmt.Fprintln(os.Stderr, err)
 				return
 			}
 
@@ -131,7 +132,7 @@ func makeAPIRequest(username *string, token *string, paidOnly *bool) {
 			detailResp, err := client.Do(detailReq)
 
 			if err != nil {
-				fmt.Println(err)
+				fmt.Fprintln(os.Stderr, err)
 			}
 
 			defer detailResp.Body.Close()
