@@ -83,19 +83,7 @@ func main() {
 	paidOnly := flag.Bool("paid", false, "Only include paid programs")
 	flag.Parse()
 
-	// urls := make(chan string)
-
-	// wg := sync.WaitGroup{}
-	// s := bufio.NewScanner(os.Stdin)
-
-	// for s.Scan() {
-	// 	urls <- s.Text()
-	// }
-
 	makeAPIRequest(username, apiToken, paidOnly)
-
-	// close(urls)
-	// wg.Wait()
 }
 
 func makeAPIRequest(username *string, token *string, paidOnly *bool) {
@@ -107,8 +95,6 @@ func makeAPIRequest(username *string, token *string, paidOnly *bool) {
 		if data.Links.Self != "" {
 			url = data.Links.Next
 		}
-
-		println(url)
 
 		req, err := http.NewRequest("GET", url, nil)
 
