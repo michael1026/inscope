@@ -115,7 +115,10 @@ func makeAPIRequest(username *string, token *string, paidOnly *bool) {
 
 		defer resp.Body.Close()
 
-		json.NewDecoder(resp.Body).Decode(&data)
+		if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return
+		}
 
 		for _, details := range data.Data {
 			var programDetails ProgramDetails
@@ -137,7 +140,10 @@ func makeAPIRequest(username *string, token *string, paidOnly *bool) {
 
 			defer detailResp.Body.Close()
 
-			json.NewDecoder(detailResp.Body).Decode(&programDetails)
+			if err := json.NewDecoder(detailResp.Body).Decode(&programDetails); err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				return
+			}
 
 			for _, scope := range programDetails.Relationships.StructedScopes.Data {
 				if scope.Attributes.AssetType == "URL" {
