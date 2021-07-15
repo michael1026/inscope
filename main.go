@@ -147,7 +147,7 @@ func makeAPIRequest(username string, token string, paidOnly bool) {
 
 			for _, scope := range programDetails.Relationships.StructedScopes.Data {
 				if scope.Attributes.AssetType == "URL" {
-					if paidOnly == false || scope.Attributes.EligibleForBounty == true {
+					if !paidOnly || scope.Attributes.EligibleForBounty {
 						fmt.Println(scope.Attributes.AssetIdentifier)
 					}
 				}
