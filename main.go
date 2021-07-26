@@ -28,7 +28,7 @@ type Attribute struct {
 	Policy                               string  `json:"policy"`
 	Profile_picture                      string  `json:"profile_picture"`
 	Submission_state                     string  `json:"submission_state"`
-	Triage_active                        string  `json:"triage_active"`
+	Triage_active                        bool    `json:"triage_active"`
 	State                                string  `json:"state"`
 	Started_accepting_at                 string  `json:"started_accepting_at"`
 	Number_of_reports_for_user           int     `json:"number_of_reports_for_user"`
@@ -107,8 +107,6 @@ func makeAPIRequest(username *string, token *string, paidOnly *bool) {
 		if data.Links.Self != "" {
 			url = data.Links.Next
 		}
-
-		println(url)
 
 		req, err := http.NewRequest("GET", url, nil)
 
