@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -83,22 +84,10 @@ func main() {
 	paidOnly := flag.Bool("paid", false, "Only include paid programs")
 	flag.Parse()
 
-	// urls := make(chan string)
-
-	// wg := sync.WaitGroup{}
-	// s := bufio.NewScanner(os.Stdin)
-
-	// for s.Scan() {
-	// 	urls <- s.Text()
-	// }
-
-	makeAPIRequest(username, apiToken, paidOnly)
-
-	// close(urls)
-	// wg.Wait()
+	makeAPIRequest(*username, *apiToken, *paidOnly)
 }
 
-func makeAPIRequest(username *string, token *string, paidOnly *bool) {
+func makeAPIRequest(username string, token string, paidOnly bool) {
 	client := buildHttpClient()
 	var data H1Response
 	url := "https://api.hackerone.com/v1/hackers/programs?page[size]=100&page[number]=1"
@@ -111,22 +100,25 @@ func makeAPIRequest(username *string, token *string, paidOnly *bool) {
 		req, err := http.NewRequest("GET", url, nil)
 
 		if err != nil {
-			fmt.Println(err)
+			fmt.Fprintln(os.Stderr, err)
 			return
 		}
 
-		req.SetBasicAuth(*username, *token)
+		req.SetBasicAuth(username, token)
 
 		resp, err := client.Do(req)
 
 		if err != nil {
-			fmt.Println(err)
+			fmt.Fprintln(os.Stderr, err)
 			return
 		}
 
 		defer resp.Body.Close()
 
-		json.NewDecoder(resp.Body).Decode(&data)
+		if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return
+		}
 
 		for _, details := range data.Data {
 			var programDetails ProgramDetails
@@ -134,25 +126,28 @@ func makeAPIRequest(username *string, token *string, paidOnly *bool) {
 			detailReq, err := http.NewRequest("GET", "https://api.hackerone.com/v1/hackers/programs/"+details.Attributes.Handle, nil)
 
 			if err != nil {
-				fmt.Println(err)
+				fmt.Fprintln(os.Stderr, err)
 				return
 			}
 
-			detailReq.SetBasicAuth(*username, *token)
+			detailReq.SetBasicAuth(username, token)
 
 			detailResp, err := client.Do(detailReq)
 
 			if err != nil {
-				fmt.Println(err)
+				fmt.Fprintln(os.Stderr, err)
 			}
 
 			defer detailResp.Body.Close()
 
-			json.NewDecoder(detailResp.Body).Decode(&programDetails)
+			if err := json.NewDecoder(detailResp.Body).Decode(&programDetails); err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				return
+			}
 
 			for _, scope := range programDetails.Relationships.StructedScopes.Data {
 				if scope.Attributes.AssetType == "URL" {
-					if *paidOnly == false || scope.Attributes.EligibleForBounty == true {
+					if !paidOnly || scope.Attributes.EligibleForBounty {
 						fmt.Println(scope.Attributes.AssetIdentifier)
 					}
 				}
